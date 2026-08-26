@@ -180,10 +180,10 @@
 
   /* Positions/sizes are carried over proportionally from the original
      4-layer wreath composition (two source illustrations, four placements) */
-  .hf-a1{ left:14%;  top:47%; width:58%; animation: bloomIn 2.6s cubic-bezier(.22,.9,.32,1) .55s both; }
-  .hf-a2{ left:-6%;  top:15%; width:85%; animation: bloomIn 2.8s cubic-bezier(.22,.9,.32,1) .05s both; }
-  .hf-b1{ left:-1%;  top:43%; width:64%; animation: bloomInMirrored 2.6s cubic-bezier(.22,.9,.32,1) .75s both; }
-  .hf-b2{ left:-11%; top:-3%; width:82%; animation: bloomInMirrored 2.9s cubic-bezier(.22,.9,.32,1) .3s  both; }
+  .hf-a1{ left:14%;  top:47%; width:58%; animation: bloomIn 2.6s cubic-bezier(.22,.9,.32,1) .55s both paused; }
+  .hf-a2{ left:-6%;  top:15%; width:85%; animation: bloomIn 2.8s cubic-bezier(.22,.9,.32,1) .05s both paused; }
+  .hf-b1{ left:-1%;  top:43%; width:64%; animation: bloomInMirrored 2.6s cubic-bezier(.22,.9,.32,1) .75s both paused; }
+  .hf-b2{ left:-11%; top:-3%; width:82%; animation: bloomInMirrored 2.9s cubic-bezier(.22,.9,.32,1) .3s  both paused; }
 
   .hero-inner{position:relative; z-index:2; text-align:center;}
   .hero-ring{
@@ -195,7 +195,7 @@
     margin:0 auto;
     backdrop-filter:blur(6px);
     opacity:0;
-    animation: bloomIn 2.1s cubic-bezier(.22,.9,.32,1) .85s both;
+    animation: bloomIn 2.1s cubic-bezier(.22,.9,.32,1) .85s both paused;
   }
   @keyframes bloomIn{
     0%{ opacity:0; transform:scale(.92) translateY(8px); }
@@ -205,14 +205,69 @@
     0%{ opacity:0; transform:scaleX(-1) scale(.92) translateY(8px); }
     100%{ opacity:1; transform:scaleX(-1) scale(1) translateY(0); }
   }
+  /* These start paused (frozen on their invisible first frame) so the
+     bloom-in only plays once the gate is tapped, no matter how long the
+     visitor waits — the "revealed" class flips them to running. */
+  #site.revealed .hf-a1, #site.revealed .hf-a2,
+  #site.revealed .hf-b1, #site.revealed .hf-b2,
+  #site.revealed .hero-ring{ animation-play-state:running; }
   @media (prefers-reduced-motion: reduce){
     .hf-a1, .hf-a2, .hero-ring{ animation:none; opacity:1; transform:none; }
     .hf-b1, .hf-b2{ animation:none; opacity:1; transform:scaleX(-1); }
   }
 
+  /* ---------- Tap-to-open gate ---------- */
+  /* Covers the whole page until the visitor taps it. That tap is a genuine
+     user gesture, so starting the audio inside its click handler is allowed
+     to play WITH sound on every browser/device — including iOS Safari and
+     in-app browsers (WhatsApp/Instagram/Telegram) that otherwise block any
+     sound until a real interaction happens. */
+  body.gate-open{overflow:hidden; height:100%;}
+  .gate{
+    position:fixed; inset:0; z-index:10000;
+    width:100%; height:100%; margin:0; padding:24px; border:none;
+    display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(ellipse at 50% 4%, #fdf1de 0%, transparent 52%),
+      radial-gradient(ellipse at 12% 18%, rgba(201,138,46,0.24) 0%, transparent 46%),
+      radial-gradient(ellipse at 88% 14%, rgba(201,138,46,0.26) 0%, transparent 48%),
+      radial-gradient(ellipse at 15% 92%, rgba(183,92,51,0.30) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 96%, rgba(183,92,51,0.24) 0%, transparent 55%),
+      var(--cream);
+    font-family:inherit; color:var(--ink); cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    transition:opacity .9s cubic-bezier(.22,.9,.32,1), visibility .9s cubic-bezier(.22,.9,.32,1), transform .9s cubic-bezier(.22,.9,.32,1);
+  }
+  .gate.hide{opacity:0; visibility:hidden; pointer-events:none; transform:scale(1.045);}
+  .gate-inner{max-width:340px; display:flex; flex-direction:column; align-items:center; transition:opacity .5s ease, transform .5s ease;}
+  .gate.hide .gate-inner{opacity:0; transform:translateY(-10px);}
+  .gate-inner img{width:118px; height:auto; margin-bottom:10px; filter:drop-shadow(0 10px 18px rgba(90,50,30,.16));}
+  .gate-names{font-size:clamp(2.6rem, 13vw, 3.6rem);}
+  .gate-date{margin-top:4px;}
+  .gate-cta{
+    margin-top:30px;
+    display:inline-flex; align-items:center; gap:10px;
+    font-family:var(--font-serif); font-size:.82rem; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--rust-deep);
+    padding:15px 28px; border:1px solid rgba(125,49,64,0.35); border-radius:999px;
+    animation:gatePulse 2.2s ease-in-out infinite;
+  }
+  .gate-cta svg{width:17px; height:17px;}
+  @keyframes gatePulse{0%,100%{transform:scale(1);} 50%{transform:scale(1.045);}}
+  @media (prefers-reduced-motion: reduce){
+    .gate{transition:opacity .3s linear; transform:none !important;}
+    .gate-inner{transition:none;}
+    .gate-cta{animation:none;}
+  }
+
   /* ---------- Background music toggle ---------- */
   .music-toggle{
-    position:absolute; top:20px; right:20px; z-index:4;
+    position:fixed; top:20px;
+    /* Anchored to the right edge of the .site card itself (max-width:560px,
+       centered) rather than the raw viewport edge, so it sits in the same
+       spot on wide desktop screens as it does on mobile. */
+    right:max(20px, calc((100vw - 560px) / 2 + 20px));
+    z-index:9999;
     width:42px; height:42px; border-radius:50%;
     background:rgba(251,244,232,0.78);
     border:1px solid rgba(125,49,64,0.2);
@@ -225,9 +280,11 @@
   .music-toggle:hover{background:rgba(251,244,232,0.95); transform:scale(1.05);}
   .music-toggle:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
   .music-toggle svg{width:19px; height:19px;}
+  /* .playing = музыка реально играет -> показываем обычную (неперечёркнутую)
+     иконку; без этого класса -> показываем перечёркнутую (звук выключен). */
   .music-toggle .icon-off{display:none;}
-  .music-toggle.playing .icon-on{display:none;}
-  .music-toggle.playing .icon-off{display:block;}
+  .music-toggle:not(.playing) .icon-on{display:none;}
+  .music-toggle:not(.playing) .icon-off{display:block;}
 
   /* ---------- Falling leaves (hero signature) ---------- */
   .leaves{position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1;}
@@ -437,7 +494,19 @@
 </style>
 </head>
 <body>
-<div class="site">
+<button type="button" class="gate" id="gate" aria-label="Открыть приглашение">
+  <div class="gate-inner">
+    <img class="hf-img-orchid_bouquet" alt="">
+    <span class="eyebrow">Приглашение</span>
+    <h1 class="script script-hero gate-names">Даниил<span class="amp">&amp;</span>Юлия</h1>
+    <div class="hero-date num gate-date">02.10.2026</div>
+    <div class="gate-cta">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v9.28a3 3 0 1 0 1 2.24V9h6V6H9z"/></svg>
+      Нажмите, чтобы открыть
+    </div>
+  </div>
+</button>
+<div class="site" id="site">
 
   <!-- ============ HERO ============ -->
   <section class="hero" id="top">
@@ -448,21 +517,6 @@
       <div class="hf-layer hf-b2"><img class="hf-img-bouquet_rich" alt=""></div>
     </div>
     <div class="leaves" aria-hidden="true" id="leaves"></div>
-
-    <!--
-      Фоновая музыка: положите файл с именем music.mp3 рядом с этим HTML-файлом
-      при загрузке/хостинге сайта. Плеер попробует включить его автоматически;
-      если браузер заблокирует автозапуск со звуком (так делают почти все
-      мобильные браузеры), музыка запустится по первому касанию/клику где угодно
-      на странице. Кнопка вверху справа всегда позволяет включить/выключить вручную.
-    -->
-    <audio id="bg-audio" loop preload="auto">
-      <source src="music.mp3" type="audio/mpeg">
-    </audio>
-    <button type="button" class="music-toggle playing" id="music-toggle" aria-label="Выключить музыку" aria-pressed="true">
-      <svg class="icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v9.28a3 3 0 1 0 1 2.24V9h6V6H9z"/></svg>
-      <svg class="icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v9.28a3 3 0 1 0 1 2.24V9h6V6H9z"/><line x1="3" y1="3" x2="21" y2="21"/></svg>
-    </button>
 
     <div class="hero-inner">
       <div class="hero-ring">
@@ -726,6 +780,22 @@
     <div class="sprig-wrap wide mt-lg"><img class="hf-img-vase" alt=""><img class="hf-img-bouquet_rich" alt=""></div>
   </section>
 
+  <!--
+    Фоновая музыка: положите файл с именем music.mp3 рядом с этим HTML-файлом
+    при загрузке/хостинге сайта. Плеер попробует включить его автоматически;
+    если браузер заблокирует автозапуск со звуком (так делают почти все
+    мобильные браузеры), музыка запустится по первому касанию/клику где угодно
+    на странице. Кнопка вверху справа всегда позволяет включить/выключить вручную,
+    остаётся на месте при прокрутке и выключается, если вкладка свёрнута.
+  -->
+  <audio id="bg-audio" loop preload="auto">
+    <source src="music.mp3" type="audio/mpeg">
+  </audio>
+  <button type="button" class="music-toggle" id="music-toggle" aria-label="Включить музыку" aria-pressed="false">
+    <svg class="icon-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v9.28a3 3 0 1 0 1 2.24V9h6V6H9z"/></svg>
+    <svg class="icon-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6v9.28a3 3 0 1 0 1 2.24V9h6V6H9z"/><line x1="3" y1="3" x2="21" y2="21"/></svg>
+  </button>
+
 </div>
 
 <!-- ============ SVG SYMBOL DEFINITIONS ============ -->
@@ -938,9 +1008,10 @@
     }
   }
 
-  // ---- Background music: try to autoplay, fall back to first-tap ----
+  // ---- Background music: started by the tap-to-open gate ----
   var musicBtn = document.getElementById('music-toggle');
   var bgAudio = document.getElementById('bg-audio');
+  var gate = document.getElementById('gate');
   if(musicBtn && bgAudio){
     bgAudio.volume = 0.4;
 
@@ -950,22 +1021,49 @@
       musicBtn.setAttribute('aria-label', isPlaying ? 'Выключить музыку' : 'Включить музыку');
     };
 
-    var startOnFirstInteraction = function(){
-      bgAudio.play().then(function(){ setPlayingUI(true); }).catch(function(){ /* still no luck — user can tap the button */ });
-    };
+    if(gate){
+      // Lock background scroll while the gate is up.
+      document.body.classList.add('gate-open');
 
-    var playPromise = bgAudio.play();
-    if(playPromise && playPromise.then){
-      playPromise.then(function(){
-        setPlayingUI(true);
-      }).catch(function(){
-        // Most mobile/desktop browsers block audio autoplay until the visitor
-        // interacts with the page at least once — start on that first tap.
-        setPlayingUI(false);
-        document.addEventListener('click', startOnFirstInteraction, {once:true});
-        document.addEventListener('touchstart', startOnFirstInteraction, {once:true});
-        document.addEventListener('keydown', startOnFirstInteraction, {once:true});
-      });
+      var openGate = function(){
+        // bgAudio.play() is called directly inside this click handler, i.e.
+        // inside real user-gesture activation — this is the one thing every
+        // browser (including iOS Safari and in-app browsers) always allows
+        // to play WITH sound, no exceptions and no code workaround needed.
+        bgAudio.play().then(function(){ setPlayingUI(true); }).catch(function(){ setPlayingUI(false); });
+
+        // Kick off the hero's bloom-in entrance animation right now, so it
+        // always plays in full for the visitor — even if they waited a long
+        // time before tapping the gate — instead of having already finished
+        // silently underneath it.
+        var site = document.getElementById('site');
+        if(site){ site.classList.add('revealed'); }
+
+        gate.classList.add('hide');
+        document.body.classList.remove('gate-open');
+        var cleanup = function(){ if(gate.parentNode){ gate.parentNode.removeChild(gate); } };
+        gate.addEventListener('transitionend', cleanup, {once:true});
+        setTimeout(cleanup, 1100); // safety net if the transition never fires
+      };
+      gate.addEventListener('click', openGate);
+    } else {
+      // Defensive fallback in case the gate markup is ever removed: reveal
+      // the hero animation immediately, then try to autoplay, otherwise
+      // start on the visitor's first tap anywhere.
+      var siteEl = document.getElementById('site');
+      if(siteEl){ siteEl.classList.add('revealed'); }
+      var startOnFirstInteraction = function(){
+        bgAudio.play().then(function(){ setPlayingUI(true); }).catch(function(){});
+      };
+      var playPromise = bgAudio.play();
+      if(playPromise && playPromise.then){
+        playPromise.then(function(){ setPlayingUI(true); }).catch(function(){
+          setPlayingUI(false);
+          document.addEventListener('click', startOnFirstInteraction, {once:true});
+          document.addEventListener('touchstart', startOnFirstInteraction, {once:true});
+          document.addEventListener('keydown', startOnFirstInteraction, {once:true});
+        });
+      }
     }
 
     musicBtn.addEventListener('click', function(){
@@ -974,6 +1072,23 @@
       } else {
         bgAudio.pause();
         setPlayingUI(false);
+      }
+    });
+
+    // Pause when the tab/page is minimized or switched away from; resume
+    // automatically when the visitor comes back — but only if the pause was
+    // caused by hiding the tab, not by the visitor deliberately hitting mute.
+    var pausedByVisibility = false;
+    document.addEventListener('visibilitychange', function(){
+      if(document.hidden){
+        if(!bgAudio.paused){
+          bgAudio.pause();
+          pausedByVisibility = true;
+          setPlayingUI(false);
+        }
+      } else if(pausedByVisibility){
+        pausedByVisibility = false;
+        bgAudio.play().then(function(){ setPlayingUI(true); }).catch(function(){});
       }
     });
   }
